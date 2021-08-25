@@ -1,0 +1,13 @@
+From python3.8
+
+MAINTAINER zhengzhou@laiye.com
+
+COPY ./requirements.txt  /app/requirements.txt
+
+WORKDIR /app
+
+RUN pip install -r requirements.txt  --trusted-host  https://pypi.tuna.tsinghua.edu.cn/simple
+
+COPY . /app
+
+CMD ["gunicorn", "-k", "gevent", "-b", "0.0.0.0:6060","app:app"]
