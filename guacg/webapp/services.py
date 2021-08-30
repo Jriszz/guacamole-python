@@ -447,6 +447,7 @@ class MachineOperationApi(object):
 
             host_ip, host_name, host_password = update_virtualmachine(ip_address=ip_address, username=username,
                                                                      password=password, machine_name=machine_name)
+
             # ip地址不存在
             if not host_ip:
                 # 逻辑待补充
@@ -493,6 +494,7 @@ class MachineOperationApi(object):
                 res_dict['data'] = temp_list
 
         except Exception as ex:
+            raise ex
             loger.error(f"虚拟机查询异常：{ex}")
             res_dict['msg'] = str(ex)
             res_dict['error_code'] = 999

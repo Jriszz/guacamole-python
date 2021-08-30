@@ -9,8 +9,8 @@ from .params import (GetVirtualMachine, RunVirtualMachine, VirtualMachineInfo,\
                     RunApplication, CheckMachineState, CheckService, ModifyIp)
 from .tools import update_virtualmachine
 from .configlogger import loger
-WEBAPP_PATH = os.path.abspath(os.path.dirname(__file__))
-STATIC_PATH = os.path.join(WEBAPP_PATH, 'static')
+# WEBAPP_PATH = os.path.abspath(os.path.dirname(__file__))
+# STATIC_PATH = os.path.join(WEBAPP_PATH, 'static')
 
 
 app = create_app()
@@ -32,9 +32,9 @@ def index():
     return render_template('rdp.html')
 
 
-@app.route('/static/<string:filename>')
-def send_static(filename):
-    return send_from_directory(STATIC_PATH, filename)
+# @app.route('/static/<string:filename>')
+# def send_static(filename):
+#     return send_from_directory(STATIC_PATH, filename)
 
 
 @app.route('/cd/machine-info', methods=['get'])
@@ -60,7 +60,6 @@ def machine_take():
         else:
             req = VirtualMachineInfo().init_and_validate()
             operation_api = MachineOperationApi(req.data)
-            operation_api.post()
 
             return operation_api.post()
 

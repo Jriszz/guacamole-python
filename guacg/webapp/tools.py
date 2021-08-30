@@ -141,7 +141,7 @@ def update_virtualmachine(ip_address=None, username=None, password=None, machine
     if password:
         commit_info['passwords'] = password
     else:
-        commit_info.pop('password')
+        commit_info.pop('passwords')
 
     if commit_info:
         VirtualMachineInfo.update_one(virtual_machine, commit_info)

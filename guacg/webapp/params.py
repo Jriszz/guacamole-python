@@ -87,15 +87,15 @@ class RunVirtualMachine(JsonForm):
 class VirtualMachineInfo(JsonForm):
 
     machine_name = StringField('machine_name', validators = [DataRequired()])
-    username = StringField('username',  default="")
-    password = StringField('password',  default="")
-    ip_address = StringField('ip_address',  default="")
+    username = StringField('username', validators = [Optional()], default="")
+    password = StringField('password', validators = [Optional()], default="")
+    ip_address = StringField('ip_address',  validators = [Optional()], default="")
 
 
 class RunApplication(JsonForm):
 
-    machine_name = StringField('machine_name', default="")
-    path = StringField('path', default="")
+    machine_name = StringField('machine_name', validators = [Optional()], default="")
+    path = StringField('path', validators = [Optional()], default="")
 
 
 class CheckMachineState(JsonForm):

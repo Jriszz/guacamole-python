@@ -30,7 +30,7 @@ class GuacamoleApp(WebSocketApplication):
             self.client.close()
 
         # @TODO: get guacd host and port!
-        self.client = GuacamoleClient('192.168.0.110', 8081)
+        self.client = GuacamoleClient('0.0.0.0', 8081)
 
         conn = sqlite3.connect("..\\..\\test.db")
         cursor = conn.cursor()
