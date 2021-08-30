@@ -1,16 +1,13 @@
 import os
 import sqlite3
 import subprocess
-from flask import render_template, send_from_directory, request
+from flask import render_template, request
 from werkzeug.debug import DebuggedApplication
 from .app import create_app
 from .services import MachineOperationApi, MachineMangeApi, AppOperationApi, RunningMachine
 from .params import (GetVirtualMachine, RunVirtualMachine, VirtualMachineInfo,\
                     RunApplication, CheckMachineState, CheckService, ModifyIp)
 from .tools import update_virtualmachine
-from .configlogger import loger
-# WEBAPP_PATH = os.path.abspath(os.path.dirname(__file__))
-# STATIC_PATH = os.path.join(WEBAPP_PATH, 'static')
 
 
 app = create_app()
@@ -30,11 +27,6 @@ def index():
     cursor.execute(sql)
     conn.commit()
     return render_template('rdp.html')
-
-
-# @app.route('/static/<string:filename>')
-# def send_static(filename):
-#     return send_from_directory(STATIC_PATH, filename)
 
 
 @app.route('/cd/machine-info', methods=['get'])

@@ -47,7 +47,6 @@ def register_after_request(app):
             data["error_code"] = 0
         if "msg" not in data:
             func = app.view_functions.get(request.endpoint)
-            # print(f"func:{getattr(func, 'view_class')}")
             if func:
                 if hasattr(func, "view_class"):
                     desc = (

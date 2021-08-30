@@ -1,4 +1,4 @@
-import json
+import os, sys
 from flask import Flask,jsonify
 from .exceptions import CustomFlaskError
 
@@ -8,7 +8,13 @@ def create_app():
 
     :param config_object: The configuration object to use.
     """
-    app = Flask(__name__.split('.')[0])
+    if getattr(sys, 'frozen', False):
+        template_folder = os.path.join(sys._MEIPASS, 'templates')
+        static_folder = os.path.join(sys._MEIPASS, 'static')
+        app = Flask(__name__.split('.')[0], template_folder=template_folder,static_folder=static_folder)
+    else:
+        app = Flask(__name__.split('.')[0])
+
     app.secret_key = "secret_key"
     register_errorhandlers(app)
     register_after_request(app)
