@@ -1,0 +1,3 @@
+pyinstaller guacgs.py --add-data "guacg/static;static" --add-data "guacg/templates;templates" -F -w
+
+*.exe install
