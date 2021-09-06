@@ -33,6 +33,7 @@ class MachineService(win32serviceutil.ServiceFramework):
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
         self.run = False
 
+
 if __name__ == '__main__':
     import sys
     import servicemanager
