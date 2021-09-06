@@ -86,50 +86,52 @@ class VmManager(object):
         system_abstract = dict(ElementName=None, EnabledState=None, HealthState=None,
                                Name=None, Day=None, Hour=None, InstallDate=None,
                                ipaddress=None, username=None, password=None)
+        try:
+            all_virtual_machine_info = list()
+            system_list = self.wmiServerConnection.Msvm_ComputerSystem()
+            network_configure = self._get_all_networkconfigure(self.wmiServerConnection)
 
-        all_virtual_machine_info = list()
-        system_list = self.wmiServerConnection.Msvm_ComputerSystem()
-        network_configure = self._get_all_networkconfigure(self.wmiServerConnection)
-
-        if system_list:
-            for machine in system_list[1:]:
-                temp_dict = copy.copy(system_abstract)
-                temp_dict['ElementName'] = machine.ElementName
-                temp_dict['OperationalStatus'] = get_enable_state(state2=machine.OperationalStatus, enums= OperationalStatusEnum)
-                temp_dict['EnabledState'] = get_enable_state(state1=machine.EnabledState, enums=EnableStateEnum)
-                temp_dict['HealthState'] = get_enable_state(state1=machine.HealthState, enums=HealthStateEnum)
-                temp_dict['Name'] = machine.Name
-                temp_dict['ipaddress'] = self._get_address(network_configure, machine.Name)
+            if system_list:
+                for machine in system_list[1:]:
+                    temp_dict = copy.copy(system_abstract)
+                    temp_dict['ElementName'] = machine.ElementName
+                    temp_dict['OperationalStatus'] = get_enable_state(state2=machine.OperationalStatus, enums= OperationalStatusEnum)
+                    temp_dict['EnabledState'] = get_enable_state(state1=machine.EnabledState, enums=EnableStateEnum)
+                    temp_dict['HealthState'] = get_enable_state(state1=machine.HealthState, enums=HealthStateEnum)
+                    temp_dict['Name'] = machine.Name
+                    temp_dict['ipaddress'] = self._get_address(network_configure, machine.Name)
 
 
-                # 查注册表
-                if not temp_dict['ipaddress'] and temp_dict['EnabledState'] == 'Enable':
+                    # 查注册表
+                    if not temp_dict['ipaddress'] and temp_dict['EnabledState'] == 'Enable':
 
-                    temp_dict['ipaddress'] = self.get_address2(machine_name=machine.name)
+                        temp_dict['ipaddress'] = self.get_address2(machine_name=machine.name)
 
-                if temp_dict['ipaddress']:
+                    if temp_dict['ipaddress']:
 
-                    with session() as db:
-                        ip_res = db.query(VirtualMachineInfo.ip_address).filter(VirtualMachineInfo.machine_name == temp_dict['Name']).first()
+                        with session() as db:
+                            ip_res = db.query(VirtualMachineInfo.ip_address).filter(VirtualMachineInfo.machine_name == temp_dict['Name']).first()
 
-                    if ip_res[0] != temp_dict['ipaddress']:
-                        VirtualMachineInfo.update_one({"machine_name": temp_dict['Name']}, {"ip_address": temp_dict['ipaddress']})
+                        if ip_res[0] != temp_dict['ipaddress']:
+                            VirtualMachineInfo.update_one({"machine_name": temp_dict['Name']}, {"ip_address": temp_dict['ipaddress']})
 
-                # 查数据库
-                if not temp_dict['ipaddress']:
+                    # 查数据库
+                    if not temp_dict['ipaddress']:
 
-                    temp_dict['ipaddress'], _, _ = check_machineinfo(table_obj=VirtualMachineInfo, machine_name=temp_dict['Name'])
+                        temp_dict['ipaddress'], _, _ = check_machineinfo(table_obj=VirtualMachineInfo, machine_name=temp_dict['Name'])
 
-                _, temp_dict['username'], temp_dict['password'] = check_machineinfo(table_obj=VirtualMachineInfo, machine_name=temp_dict['Name'])
+                    _, temp_dict['username'], temp_dict['password'] = check_machineinfo(table_obj=VirtualMachineInfo, machine_name=temp_dict['Name'])
 
-                temp_dict['Day'], temp_dict['Hour'] = calculate_time(running_time=int(machine.OnTimeInMilliseconds))
-                temp_dict['InstallDate'] = machine.InstallDate[0:8]
+                    temp_dict['Day'], temp_dict['Hour'] = calculate_time(running_time=int(machine.OnTimeInMilliseconds))
+                    temp_dict['InstallDate'] = machine.InstallDate[0:8]
 
-                all_virtual_machine_info.append(temp_dict)
+                    all_virtual_machine_info.append(temp_dict)
 
-            return all_virtual_machine_info
-        else:
-            return system_list
+                return all_virtual_machine_info
+            else:
+                return system_list
+        except Exception as ex:
+            loger.error("wmi查询虚拟机异常:", ex)
 
     def find_running_virtual_machine(self):
 
