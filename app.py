@@ -42,7 +42,9 @@ class GuacamoleApp(WebSocketApplication):
         self.client.handshake(protocol='rdp', hostname=data_tuple[0],
                               port=3389, username=data_tuple[1],
                               password=data_tuple[2], domain='',
-                              security='', remote_app='', height=924, width=1684, disable_glyph_caching="true")
+                              security='', remote_app='',
+                              height=924, width=1684,
+                              disable_glyph_caching="true", ignore_cert="true")
 
         self._start_listener()
 
