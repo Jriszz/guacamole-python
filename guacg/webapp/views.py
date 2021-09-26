@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import subprocess
+
 from flask import render_template, request
 from werkzeug.debug import DebuggedApplication
 from .app import create_app
@@ -32,6 +33,7 @@ def index():
 @app.route('/cd/machine-info', methods=['get'])
 def machine_info():
     try:
+
         req = GetVirtualMachine().init_and_validate()
         machine_api = MachineMangeApi(req.data)
         return machine_api.get()

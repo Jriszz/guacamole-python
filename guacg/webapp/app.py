@@ -1,7 +1,7 @@
 import os, sys
 from flask import Flask,jsonify
 from .exceptions import CustomFlaskError
-
+from .extensions import cache
 
 def create_app():
     """An application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
@@ -18,6 +18,7 @@ def create_app():
     app.secret_key = "secret_key"
     register_errorhandlers(app)
     register_after_request(app)
+    register_extensions(app)
     return app
 
 
@@ -28,6 +29,11 @@ def register_errorhandlers(app):
         response = jsonify(error.to_dict())
         response.status_code = 200
         return response
+
+
+def register_extensions(app):
+    """Register Flask extensions."""
+    cache.init_app(app)
 
 
 def register_after_request(app):

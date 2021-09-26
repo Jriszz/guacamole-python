@@ -1,5 +1,4 @@
 import gevent
-import time
 import sqlite3
 from geventwebsocket import WebSocketApplication
 

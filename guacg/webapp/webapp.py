@@ -2,6 +2,7 @@ import json
 from flask import Flask,jsonify,request
 from .configlogger import loger
 from .exceptions import CustomFlaskError
+from flask_caching import Cache
 
 
 def create_app():
@@ -13,6 +14,7 @@ def create_app():
     app.secret_key = "secret_key"
     register_errorhandlers(app)
     register_after_request(app)
+    register_extensions(app)
     return app
 
 
@@ -23,6 +25,14 @@ def register_errorhandlers(app):
         response = jsonify(error.to_dict())
         response.status_code = 200
         return response
+
+
+def register_extensions(app):
+
+    """Register Flask extensions."""
+    cache = Cache(config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 300})
+    cache.init_app(app)
+    return cache
 
 
 def register_after_request(app):

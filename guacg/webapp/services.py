@@ -11,8 +11,10 @@ from .tools import (check_machineinfo, check_virtualmachineinfo,
 from .models import EnvironConfig, create_cursor, VirtualMachineInfo,PackageRecord
 from .state_enums import TaskStateEnum, ResponseEnum, ApplicationEnum
 from itertools import zip_longest
-
+from .extensions import cache
+import time
 UNKNOW_STATE = "未知"
+COUNT_DOWN = 10
 
 
 class EnvironConfigApi(object):
@@ -60,6 +62,7 @@ class EnvironConfigApi(object):
                 res_dict["config_list"].append(item.sing_to_dict())
 
             res_dict["total"] = res_total
+
         # 查询worker状态
         try:
             cursor = create_cursor()
@@ -339,6 +342,7 @@ class MachineMangeApi(object):
         """
         查询虚拟机
         """
+        global COUNT_DOWN
         require_data = self.data
         res_dict = dict(msg="请求成功", data=dict(), error_code=None)
         machine_list = list()
@@ -348,6 +352,37 @@ class MachineMangeApi(object):
 
         try:
             if not machine_name:
+
+                # 查询缓存中是否已存储虚拟机信息
+
+                is_record = cache.get("is_record")
+
+                if is_record:
+                    machine_info = cache.get("machine_info")
+
+                    if machine_info:
+                        res_dict['data'] = machine_info
+                        return res_dict
+                    else:
+                        while COUNT_DOWN:
+
+                            machine_info = cache.get("machine_info")
+
+                            if machine_info:
+                                res_dict['data'] = machine_info
+                                return res_dict
+                            else:
+                                time.sleep(1)
+                                COUNT_DOWN = COUNT_DOWN - 1
+
+                        res_dict['msg'] = "无法连接宿主机，检查宿主机是否正常运行"
+                        res_dict['error_code'] = 999
+                        return res_dict
+
+                else:
+                    # 上同步锁
+                    cache.set("is_record", True, timeout=300)
+
                 # 查全部
                 with session() as db:
                     environ_res = db.query(VirtualMachineInfo).filter(VirtualMachineInfo.machine_type == 'host').all()
@@ -373,22 +408,62 @@ class MachineMangeApi(object):
                 res_dict['data']["virtual_machine"] = temp_list
                 res_dict['data']['host_machine'] = host_list
 
-                return res_dict
+                # res_dict['data']["virtual_machine"] = machine_list
+                # 存储机器信息
 
+                cache.set('machine_info', res_dict['data'], timeout=300)
+
+                return res_dict
+            # todo 单台虚拟机查询逻辑待补充
             else:
+                # 查询缓存中是否已存储虚拟机信息
+                one_record = cache.get(f"{str(machine_name)}_one_record")
+
+                if one_record:
+                    machine_info = cache.get("one_machine")
+
+                    if machine_info:
+                        res_dict['data'] = machine_info
+                        return res_dict
+                    else:
+                        while COUNT_DOWN:
+
+                            machine_info = cache.get("one_machine")
+
+                            if machine_info:
+                                res_dict['data'] = machine_info
+                                return res_dict
+                            else:
+                                time.sleep(1)
+                                COUNT_DOWN = COUNT_DOWN - 1
+                else:
+                    # 加同步锁
+                    cache.set(f"{str(machine_name)}_one_record", True, timeout=300)
+
                 # 查单台
                 ip_address, username, password = check_machineinfo(VirtualMachineInfo, machine_name)
 
 
                 try:
                     machine_list = check_virtualmachineinfo(ip_address, username, password, machine_list, VmManager)
+                    host_machine = dict(type='host', ipaddress=None, username=None, passwords=None, Name=None)
+                    host_machine['ipaddress'] = ip_address
+                    host_machine['username'] = username
+                    host_machine['passwords'] = password
+                    host_machine['Name'] = machine_name
+
+                    host_list.append(host_machine)
+                    res_dict['data']["virtual_machine"] = temp_list
+                    res_dict['data']['host_machine'] = host_list
+
+                    # res_dict['data']["virtual_machine"] = machine_list
+                    # 存储机器信息
+                    cache.set('one_machine', res_dict['data'], timeout=300)
 
                 except Exception as ex:
                     loger.error(ex)
                     res_dict['msg'] = "无法连接宿主机，检查宿主机是否正常运行"
                     res_dict['error_code'] = 999
-
-                res_dict['data']["virtual_machine"] = machine_list
 
                 return res_dict
 
