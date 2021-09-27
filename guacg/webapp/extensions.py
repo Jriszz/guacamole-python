@@ -2,4 +2,4 @@
 from flask_caching import Cache
 
 
-cache = Cache(config={"CACHE_TYPE": "FileSystemCache","CACHE_DIR":"file_dir"})
+cache = Cache(config={"CACHE_TYPE": "FileSystemCache", "CACHE_DIR": "file_dir"})

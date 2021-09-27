@@ -62,3 +62,5 @@ docs/_build/
 # Local guacg settings
 local_settings.py
 
+#TEMP CACHADIR
+file_dir/

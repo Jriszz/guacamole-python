@@ -14,7 +14,7 @@ from itertools import zip_longest
 from .extensions import cache
 import time
 UNKNOW_STATE = "未知"
-COUNT_DOWN = 10
+COUNT_DOWN = 20
 
 
 class EnvironConfigApi(object):
@@ -372,6 +372,11 @@ class MachineMangeApi(object):
                                 res_dict['data'] = machine_info
                                 return res_dict
                             else:
+                                all_virtual_err = cache.get("error")
+                                if all_virtual_err:
+                                    cache.delete("error")
+                                    break
+
                                 time.sleep(1)
                                 COUNT_DOWN = COUNT_DOWN - 1
 
@@ -408,10 +413,13 @@ class MachineMangeApi(object):
                 res_dict['data']["virtual_machine"] = temp_list
                 res_dict['data']['host_machine'] = host_list
 
-                # res_dict['data']["virtual_machine"] = machine_list
                 # 存储机器信息
-
-                cache.set('machine_info', res_dict['data'], timeout=300)
+                if temp_list:
+                    cache.set('machine_info', res_dict['data'], timeout=300)
+                else:
+                    # 未查询成功清除同步锁
+                    cache.delete('record')
+                    cache.set("error", True, timeout=10)
 
                 return res_dict
             # todo 单台虚拟机查询逻辑待补充
@@ -434,8 +442,18 @@ class MachineMangeApi(object):
                                 res_dict['data'] = machine_info
                                 return res_dict
                             else:
+                                find_virtual_err = cache.get(f"{str(machine_name)}_one_record_error")
+                                if find_virtual_err:
+                                    cache.delete(f"{str(machine_name)}_one_record_error")
+                                    break
+                                    
                                 time.sleep(1)
                                 COUNT_DOWN = COUNT_DOWN - 1
+
+                        res_dict['msg'] = "无法连接宿主机，检查宿主机是否正常运行"
+                        res_dict['error_code'] = 999
+                        return res_dict
+                        
                 else:
                     # 加同步锁
                     cache.set(f"{str(machine_name)}_one_record", True, timeout=300)
@@ -456,11 +474,16 @@ class MachineMangeApi(object):
                     res_dict['data']["virtual_machine"] = temp_list
                     res_dict['data']['host_machine'] = host_list
 
-                    # res_dict['data']["virtual_machine"] = machine_list
                     # 存储机器信息
-                    cache.set('one_machine', res_dict['data'], timeout=300)
-
+                    if temp_list:
+                        cache.set('one_machine', res_dict['data'], timeout=300)
+                    else:
+                        # 未查询成功清除同步锁
+                        cache.delete(f"{str(machine_name)}_one_record")
+                        cache.set(f"{str(machine_name)}_one_record_error", True, timeout=10)
                 except Exception as ex:
+                    cache.delete(f"{str(machine_name)}_one_record")
+                    cache.set(f"{str(machine_name)}_one_record_error", True, timeout=10)
                     loger.error(ex)
                     res_dict['msg'] = "无法连接宿主机，检查宿主机是否正常运行"
                     res_dict['error_code'] = 999
