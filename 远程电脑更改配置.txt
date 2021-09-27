@@ -1,0 +1,35 @@
+compmgmt.msc
+1. 计算机管理(本地) -》 本地用户和组-》用户-》administrator-》属性-》取消禁用
+2. 计算机管理(本地) -》 本地用户和组-》组-》Performance Log Users -》 添加-》成员
+WMImgmt.msc
+控制台根节点-》WMI控件(本地)-》属性-》安全-》-》root-》CIMV2 进行安全设置-》选择用户或用户组-》勾选权限
+Dcomcnfg
+组建服务-》我的电脑-》属性-》COM安全-》编辑限制-》everyone-》远程启动，远程激活
+gpedit.msc 
+本地組组策略-》计算机配置-》Windows设置-》安全设置-》本地策略-》安全选项-》网络访问: 本地帐户的共享和安全模型---改为 “经典-本地用户以自己身份验证”
+
+
+winrm
+1.
+winrm service 默认都是未启用的状态，先查看状态；如无返回信息，则是没有启动；
+
+winrm enumerate winrm/config/listener
+
+2.针对winrm service 进行基础配置
+
+winrm quickconfig
+例外，若出现异常：
+由于此计算机上的网络连接类型之一设置为公用，因此 WinRM 防火墙例外将不运行。将网络连接类型更改为域或专用，然后再次尝试。
+网络和Internet设置-》设置连接属性 -》专用
+
+3.查看winrm service listener:
+
+winrm e winrm/config/listener
+
+4. 为winrm service 配置auth:
+
+winrm set winrm/config/service/auth '@{Basic="true"}'
+
+5. 为winrm service 配置加密方式为允许非加密：
+
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
