@@ -418,7 +418,7 @@ class MachineMangeApi(object):
                     cache.set('machine_info', res_dict['data'], timeout=300)
                 else:
                     # 未查询成功清除同步锁
-                    cache.delete('record')
+                    cache.delete('is_record')
                     cache.set("error", True, timeout=10)
 
                 return res_dict

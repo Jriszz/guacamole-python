@@ -33,3 +33,5 @@ winrm set winrm/config/service/auth '@{Basic="true"}'
 5. 为winrm service 配置加密方式为允许非加密：
 
 winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+
+接続のプロパティを変更

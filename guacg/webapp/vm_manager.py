@@ -4,7 +4,7 @@ import pythoncom
 from .configlogger import loger
 from .tools import calculate_time, get_enable_state, parse_xml,check_machineinfo
 from wmi import _wmi_object, _wmi_namespace
-from .models import VirtualMachineInfo,session
+from .models import VirtualMachineInfo, session
 from .state_enums import EnableStateEnum, HealthStateEnum, OperationalStatusEnum
 
 
