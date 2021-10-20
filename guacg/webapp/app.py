@@ -2,6 +2,8 @@ import os, sys
 from flask import Flask,jsonify
 from .exceptions import CustomFlaskError
 from .extensions import cache
+from .configlogger import loger
+
 
 def create_app():
     """An application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
@@ -11,7 +13,8 @@ def create_app():
     if getattr(sys, 'frozen', False):
         template_folder = os.path.join(sys._MEIPASS, 'templates')
         static_folder = os.path.join(sys._MEIPASS, 'static')
-        app = Flask(__name__.split('.')[0], template_folder=template_folder,static_folder=static_folder)
+        loger.info("依赖文件路径:", sys._MEIPASS)
+        app = Flask(__name__.split('.')[0], template_folder=template_folder, static_folder=static_folder)
     else:
         app = Flask(__name__.split('.')[0])
 

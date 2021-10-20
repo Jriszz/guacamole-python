@@ -3,6 +3,8 @@ monkey.patch_all()  # noqa
 
 import argparse
 import pymysql
+import geventwebsocket
+
 from geventwebsocket import WebSocketServer, Resource
 
 from guacg.webapp.views import get_webapp_resources

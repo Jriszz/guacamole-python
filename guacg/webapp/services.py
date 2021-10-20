@@ -348,7 +348,8 @@ class MachineMangeApi(object):
         machine_list = list()
         host_list = list()
         temp_list = list()
-        machine_name = require_data['machine_name']
+        complete_flag = False
+        machine_name = require_data['host_ip']
 
         try:
             if not machine_name:
@@ -388,6 +389,34 @@ class MachineMangeApi(object):
                     # 上同步锁
                     cache.set("is_record", True, timeout=300)
 
+                    # 查单台信息,若存在一台不存在,就接下去查全部
+                    with session() as db:
+                        environ_res = db.query(VirtualMachineInfo).filter(
+                            VirtualMachineInfo.machine_type == 'host').all()
+
+                    for environ_item in environ_res:
+                        host_machine = dict(type='host', ipaddress=None, username=None, passwords=None, Name=None)
+                        host_ip = environ_item.ip_address
+                        host_machine['username'] = environ_item.username
+                        host_machine['passwords'] = environ_item.passwords
+                        host_machine['Name'] = environ_item.machine_name
+                        host_list.append(host_machine)
+
+                        one_machine_info = cache.get(f"{str(host_ip)}_one_machine")
+                        if one_machine_info:
+                            temp_list.extend(one_machine_info)
+                            complete_flag = True
+
+                        else:
+                            temp_list = list()
+                            break
+
+                    if complete_flag:
+                        res_dict['data']["virtual_machine"] = temp_list
+                        res_dict['data']['host_machine'] = host_list
+                        cache.set('machine_info', res_dict['data'], timeout=300)
+                        return res_dict
+
                 # 查全部
                 with session() as db:
                     environ_res = db.query(VirtualMachineInfo).filter(VirtualMachineInfo.machine_type == 'host').all()
@@ -424,11 +453,21 @@ class MachineMangeApi(object):
                 return res_dict
             # todo 单台虚拟机查询逻辑待补充
             else:
+                # 查全部虚拟机信息
+                machine_info = cache.get("machine_info")
+                if machine_info and machine_info.get('virtual_machine', None):
+                    one_machine_info = filter(lambda one_machine: one_machine['HostIp'] == machine_name, machine_info['virtual_machine'])
+
+                    one_machine_list = list(one_machine_info)
+                    machine_info['virtual_machine'] = one_machine_list
+                    res_dict['data'] = machine_info
+                    return res_dict
+
                 # 查询缓存中是否已存储虚拟机信息
                 one_record = cache.get(f"{str(machine_name)}_one_record")
 
                 if one_record:
-                    machine_info = cache.get("one_machine")
+                    machine_info = cache.get(f"{str(machine_name)}_one_machine")
 
                     if machine_info:
                         res_dict['data'] = machine_info
@@ -436,7 +475,7 @@ class MachineMangeApi(object):
                     else:
                         while COUNT_DOWN:
 
-                            machine_info = cache.get("one_machine")
+                            machine_info = cache.get(f"{str(machine_name)}_one_machine")
 
                             if machine_info:
                                 res_dict['data'] = machine_info
@@ -459,11 +498,12 @@ class MachineMangeApi(object):
                     cache.set(f"{str(machine_name)}_one_record", True, timeout=300)
 
                 # 查单台
-                ip_address, username, password = check_machineinfo(VirtualMachineInfo, machine_name)
+                ip_address, username, password = check_machineinfo(VirtualMachineInfo, ip_address=machine_name)
 
 
                 try:
                     machine_list = check_virtualmachineinfo(ip_address, username, password, machine_list, VmManager)
+                    temp_list.extend(machine_list)
                     host_machine = dict(type='host', ipaddress=None, username=None, passwords=None, Name=None)
                     host_machine['ipaddress'] = ip_address
                     host_machine['username'] = username
@@ -476,7 +516,7 @@ class MachineMangeApi(object):
 
                     # 存储机器信息
                     if temp_list:
-                        cache.set('one_machine', res_dict['data'], timeout=300)
+                        cache.set(f"{str(machine_name)}_one_machine", res_dict['data'], timeout=300)
                     else:
                         # 未查询成功清除同步锁
                         cache.delete(f"{str(machine_name)}_one_record")

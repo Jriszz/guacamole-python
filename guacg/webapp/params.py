@@ -74,7 +74,7 @@ class GetEnvironInfo(JsonForm):
 
 class GetVirtualMachine(JsonForm):
 
-    machine_name = StringField('machine_name', validators = [Optional()], default="")
+    host_ip = StringField('host_ip', validators= [Optional()], default="")
 
 
 class RunVirtualMachine(JsonForm):
