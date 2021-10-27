@@ -106,7 +106,7 @@ def modify_ip():
 
 @app.route('/cd/running-machine', methods=['get'])
 def get_machine():
-    res_dict  = RunningMachine().get()
+    res_dict = RunningMachine().get()
 
     return res_dict
 

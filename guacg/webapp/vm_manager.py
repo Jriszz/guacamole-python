@@ -112,7 +112,7 @@ class VmManager(object):
                         with session() as db:
                             ip_res = db.query(VirtualMachineInfo.ip_address).filter(VirtualMachineInfo.machine_name == temp_dict['Name']).first()
 
-                        if ip_res[0] != temp_dict['ipaddress']:
+                        if ip_res and ip_res[0] != temp_dict['ipaddress']:
                             VirtualMachineInfo.update_one({"machine_name": temp_dict['Name']}, {"ip_address": temp_dict['ipaddress']})
 
                     # 查数据库

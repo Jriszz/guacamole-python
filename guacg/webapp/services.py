@@ -397,6 +397,7 @@ class MachineMangeApi(object):
                     for environ_item in environ_res:
                         host_machine = dict(type='host', ipaddress=None, username=None, passwords=None, Name=None)
                         host_ip = environ_item.ip_address
+                        host_machine['ipaddress'] = host_ip
                         host_machine['username'] = environ_item.username
                         host_machine['passwords'] = environ_item.passwords
                         host_machine['Name'] = environ_item.machine_name
@@ -420,7 +421,8 @@ class MachineMangeApi(object):
                 # 查全部
                 with session() as db:
                     environ_res = db.query(VirtualMachineInfo).filter(VirtualMachineInfo.machine_type == 'host').all()
-
+                # 重写host_list
+                host_list = list()
                 for environ_item in environ_res:
                     host_ip = environ_item.ip_address
                     host_name = environ_item.username
@@ -500,7 +502,6 @@ class MachineMangeApi(object):
                 # 查单台
                 ip_address, username, password = check_machineinfo(VirtualMachineInfo, ip_address=machine_name)
 
-
                 try:
                     machine_list = check_virtualmachineinfo(ip_address, username, password, machine_list, VmManager)
                     temp_list.extend(machine_list)
@@ -521,6 +522,7 @@ class MachineMangeApi(object):
                         # 未查询成功清除同步锁
                         cache.delete(f"{str(machine_name)}_one_record")
                         cache.set(f"{str(machine_name)}_one_record_error", True, timeout=10)
+
                 except Exception as ex:
                     cache.delete(f"{str(machine_name)}_one_record")
                     cache.set(f"{str(machine_name)}_one_record_error", True, timeout=10)
@@ -713,25 +715,106 @@ class RunningMachine(object):
         res_dict = dict(msg="请求成功", data=dict(), error_code=None)
         temp_list = []
         machine_list = list()
+        machine_dict = dict(virtual_machine=None)
+
         try:
+            # 查询缓存中是否已存储虚拟机信息
 
-            with session() as db:
-                environ_res = db.query(VirtualMachineInfo).filter(VirtualMachineInfo.machine_type == 'host').all()
+            is_record = cache.get("is_record")
+            if is_record:
 
-            for environ_item in environ_res:
-                host_ip = environ_item.ip_address
-                host_name = environ_item.username
-                host_password = environ_item.passwords
+                # 查缓存正在运行虚拟机信息
+                machine_info = cache.get("machine_info")
 
-                try:
-                    machine_list = check_running_virtualmachine(host_ip, host_name, host_password, machine_list, VmManager)
-                    temp_list.extend(machine_list)
-                except Exception as ex:
-                    loger.error("查询正在运行的虚拟机失败", ex)
+                if machine_info and machine_info.get('virtual_machine', None):
+                    temp_machine_list = list()
+                    one_machine_info = filter(lambda one_machine: one_machine['EnabledState'] == '正在运行',
+                                              machine_info['virtual_machine'])
 
-            res_dict['data']["virtual_machine"] = temp_list
+                    one_machine_list = [ {"ElementName": item['ElementName'], 'Name': item['Name'],'ipaddress':item['ipaddress']} for item in one_machine_info]
+                    machine_dict['virtual_machine'] = one_machine_list
+                    res_dict['data'] = machine_dict
+                    return res_dict
 
-            return res_dict
+                else:
+
+                    while COUNT_DOWN:
+
+                        machine_info = cache.get("machine_info")
+
+                        if machine_info:
+
+                            one_machine_info = filter(lambda one_machine: one_machine['EnabledState'] == '正在运行',
+                                                      machine_info['virtual_machine'])
+
+                            one_machine_list = [{"ElementName": item['ElementName'], 'Name': item['Name'],
+                                                 'ipaddress': item['ipaddress']} for item in one_machine_info]
+
+                            machine_dict['virtual_machine'] = one_machine_list
+                            res_dict['data'] = machine_dict
+                            return res_dict
+                        else:
+                            all_virtual_err = cache.get("error")
+                            if all_virtual_err:
+                                cache.delete("error")
+                                break
+
+                            time.sleep(1)
+                            COUNT_DOWN = COUNT_DOWN - 1
+
+                    res_dict['msg'] = "无法连接宿主机，检查宿主机是否正常运行"
+                    res_dict['error_code'] = 999
+                    return res_dict
+
+            else:
+
+                # # 上同步锁
+                cache.set("is_record", True, timeout=300)
+                host_list = list()
+                with session() as db:
+                    environ_res = db.query(VirtualMachineInfo).filter(VirtualMachineInfo.machine_type == 'host').all()
+
+                for environ_item in environ_res:
+                    host_ip = environ_item.ip_address
+                    host_name = environ_item.username
+                    host_password = environ_item.passwords
+                    host_machinename = environ_item.machine_name
+                    try:
+                        machine_list = check_virtualmachineinfo(host_ip, host_name, host_password, machine_list, VmManager)
+                        temp_list.extend(machine_list)
+                    except Exception as ex:
+                        loger.error("查询正在运行的虚拟机失败", ex)
+
+                    host_machine = dict(type='host', ipaddress=None, username=None, passwords=None, Name=None)
+                    host_machine['ipaddress'] = host_ip
+                    host_machine['username'] = host_name
+                    host_machine['passwords'] = host_password
+                    host_machine['Name'] = host_machinename
+                    host_list.append(host_machine)
+
+                res_dict['data']["virtual_machine"] = temp_list
+                res_dict['data']['host_machine'] = host_list
+
+                # 存储机器信息
+                if temp_list:
+                    cache.set('machine_info', res_dict['data'], timeout=300)
+                else:
+                    # 未查询成功清除同步锁
+                    cache.delete('is_record')
+                    cache.set("error", True, timeout=10)
+                # 过滤正在运行
+                if res_dict['data']["virtual_machine"]:
+
+                    one_machine_info = filter(lambda one_machine: one_machine['EnabledState'] == '正在运行',
+                                              res_dict['data']['virtual_machine'])
+
+                    one_machine_list = [{"ElementName": item['ElementName'], 'Name': item['Name'],
+                                         'ipaddress': item['ipaddress']} for item in one_machine_info]
+
+                    res_dict = dict(msg="请求成功", data=dict(), error_code=None)
+                    res_dict['data']["virtual_machine"] = one_machine_list
+
+                return res_dict
 
         except Exception as ex:
             loger.error(f"查询状态异常：{ex}")

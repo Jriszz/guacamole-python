@@ -50,9 +50,10 @@ def check_machineinfo(table_obj: str = '', machine_name: str = '' , ip_address: 
             query_res = db.query(table_obj).filter(
                 table_obj.machine_name == machine_name if machine_name else table_obj.ip_address == ip_address
             ).first()
-
-        return query_res.ip_address, query_res.username, query_res.passwords
-
+        if query_res:
+            return query_res.ip_address, query_res.username, query_res.passwords
+        else:
+            return  "","",""
 
 def record_database(table_obj, data):
     with session() as db:
@@ -84,6 +85,8 @@ def check_virtualmachineinfo(host_ip, host_name, host_password, machine_list, Vm
         temp_machine = vmManager.find_all_virtual_machine()
 
     except Exception as ex:
+
+        loger.error(f"查询所有虚拟机异常: {ex}")
         raise ex
 
     finally:
