@@ -8,7 +8,7 @@ __all__ = ["create_cursor", "EnvironConfig", "VirtualMachineInfo", "PackageRecor
 
 # 初始化数据库连接
 
-MYSQL_DB_CONNECT_STRING = "mysql+pymysql://uibot:uibot2020@192.168.0.111:3306/ferrymen?charset=utf8"
+MYSQL_DB_CONNECT_STRING = "mysql+pymysql://uibot:uibot2020@www.uibot123.cn:3306/ferrymen?charset=utf8"
 engine = create_engine(MYSQL_DB_CONNECT_STRING, echo=False, pool_size=250, max_overflow=50, pool_recycle=300)
 Base = declarative_base(engine)
 Session = scoped_session(sessionmaker(autocommit=False,
